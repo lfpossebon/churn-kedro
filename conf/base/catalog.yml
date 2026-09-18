@@ -1,0 +1,147 @@
+# Data Catalog — all I/O lives here, never inside a node.
+# Swapping CSV for Parquet, or local disk for S3, is a change to this file only.
+# Layers follow the Kedro data-engineering convention: raw -> intermediate ->
+# primary -> feature -> model_input -> model_output / reporting.
+
+# ---------------------------------------------------------------- raw (01)
+raw_churn_data:
+  type: pandas.CSVDataset
+  filepath: data/01_raw/telco-churn-modelling.csv
+  load_args:
+    sep: ';'
+  metadata:
+    kedro-viz:
+      layer: raw
+
+raw_inference_data:
+  type: pandas.CSVDataset
+  filepath: data/01_raw/telco-churn-inference.csv
+  load_args:
+    sep: ';'
+  metadata:
+    kedro-viz:
+      layer: raw
+
+# Injection point for online inference: an API can replace this entry with a
+# MemoryDataset holding the request payload and run the very same pipeline.
+raw_inference_dataframe:
+  type: MemoryDataset
+
+# ------------------------------------------------- intermediate (02) & primary (03)
+cleaned_churn_data:
+  type: pandas.CSVDataset
+  filepath: data/02_intermediate/cleaned_telco-churn-modelling.csv
+  save_args:
+    index: false
+  metadata:
+    kedro-viz:
+      layer: intermediate
+
+cleaned_inference_data:
+  type: pandas.CSVDataset
+  filepath: data/02_intermediate/cleaned_telco-churn-inference.csv
+  save_args:
+    index: false
+  metadata:
+    kedro-viz:
+      layer: intermediate
+
+split_churn_data:
+  type: pandas.CSVDataset
+  filepath: data/03_primary/split_telco-churn-modelling.csv
+  save_args:
+    index: false
+  metadata:
+    kedro-viz:
+      layer: primary
+
+# ------------------------------------------- feature (04) & model input (05)
+encoded_churn_data:
+  type: pandas.CSVDataset
+  filepath: data/04_feature/encoded_telco-churn-modelling.csv
+  save_args:
+    index: false
+  metadata:
+    kedro-viz:
+      layer: feature
+
+encoded_inference_data:
+  type: pandas.CSVDataset
+  filepath: data/04_feature/encoded_telco-churn-inference.csv
+  save_args:
+    index: false
+  metadata:
+    kedro-viz:
+      layer: feature
+
+master_table:
+  type: pandas.CSVDataset
+  filepath: data/05_model_input/master_table_telco-churn-modelling.csv
+  save_args:
+    index: false
+  metadata:
+    kedro-viz:
+      layer: model_input
+
+scaled_inference_data:
+  type: pandas.CSVDataset
+  filepath: data/05_model_input/scaled_telco-churn-inference.csv
+  save_args:
+    index: false
+  metadata:
+    kedro-viz:
+      layer: model_input
+
+# ---------------------------------------------------------- models (06)
+# No layer here on purpose: these fit artefacts are produced from one layer and
+# consumed to build another, so tagging them would make kedro-viz see a cycle
+# between 'feature' and 'model_input' and switch layer visualisation off.
+modelling_encoders:
+  type: pickle.PickleDataset
+  filepath: data/06_models/modelling_encoders.pkl
+
+modelling_scalers:
+  type: pickle.PickleDataset
+  filepath: data/06_models/modelling_scalers.pkl
+
+baseline_model:
+  type: pickle.PickleDataset
+  filepath: data/06_models/baseline_model.pkl
+
+optimized_model:
+  type: pickle.PickleDataset
+  filepath: data/06_models/optimized_model.pkl
+
+production_encoders:
+  type: pickle.PickleDataset
+  filepath: data/06_models/production_encoders.pkl
+
+production_scalers:
+  type: pickle.PickleDataset
+  filepath: data/06_models/production_scalers.pkl
+
+production_model:
+  type: pickle.PickleDataset
+  filepath: data/06_models/production_model.pkl
+
+# ------------------------------------- model output (07) & reporting (08)
+inference_predictions:
+  type: json.JSONDataset
+  filepath: data/07_model_output/inference_predictions.json
+  metadata:
+    kedro-viz:
+      layer: model_output
+
+baseline_metrics:
+  type: json.JSONDataset
+  filepath: data/08_reporting/baseline_metrics.json
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+optimized_metrics:
+  type: json.JSONDataset
+  filepath: data/08_reporting/optimized_metrics.json
+  metadata:
+    kedro-viz:
+      layer: reporting
